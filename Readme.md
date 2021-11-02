@@ -332,6 +332,12 @@ color: white;
                 <a href="https://github.com/CODAIT/pardata">Github Repository</a>
             </div>
         </div>
+        <div class="container right">
+            <div class="content">
+                <p>Start the jupyter server</p>
+                <a class="button is-dark is-medium" title="Start the server" href="didact://?commandId=vscode.didact.sendNamedTerminalAString&text=theia%20terminal$$curl -X POST -H 'Authorization: token 17498ac0934c487daf373d0f58a130da' 'http://169.48.29.132/hub/api/users/nupur2/server'">Start the server</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>
