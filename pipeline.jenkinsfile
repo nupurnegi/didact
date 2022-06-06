@@ -1,0 +1,12 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Print') {
+            steps {
+                sh label: 'skopeo login', script: 'echo hello'
+            }
+        }
+
+    }
+}
