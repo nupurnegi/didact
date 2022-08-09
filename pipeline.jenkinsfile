@@ -1,12 +1,66 @@
 pipeline {
     agent any
 
+    parameters {
+        string description: 'Eclipse Che Version', name: 'CHE_VERSION', trim: true
+        bool description: 'Dashboard Disable', name: 'DASHBOARD_DISABLE', trim: true
+    }
+
     stages {
-        stage('Print') {
+        stage('Clone che dashboard') {
+            agent {
+                docker {
+                    image 'us.icr.io/apihub-cr/dev-pg/yqit'
+                    registryUrl 'https://us.icr.io/api'
+                    registryCredentialsId 'icr-token'
+                    args '-u root --entrypoint=\'\''
+                }
+            }
             steps {
-                sh label: 'skopeo login', script: 'echo hello'
+                checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: "refs/tags/${env.CHE_VERSION}"]], extensions: [[$class: 'CloneOption', noTags: false, shallow: false], [$class: 'RelativeTargetDirectory', relativeTargetDir: 'che-dashboard']], userRemoteConfigs: [[url: 'https://github.com/eclipse-che/che-dashboard']]]
             }
         }
 
+        stage('Update che server config') {
+            agent {
+                docker {
+                    image 'us.icr.io/apihub-cr/dev-pg/yqit'
+                    registryUrl 'https://us.icr.io/api'
+                    registryCredentialsId 'icr-token'
+                    args '-u root --entrypoint=\'\''
+                }
+            }
+            steps {
+
+                sh label: 'Update base node image', script: "sed -i 's/docker.io\\/node:12.20.1-alpine3.12/docker.io\\/node:14.20.0-alpine3.16/g' che-dashboard/build/dockerfiles/Dockerfile"
+                sh label: "Add libraries", script: "sed -i '/^FROM docker.io/a RUN apk add --no-cache --upgrade openssl-dev libffi-dev libressl-dev' che-dashboard/build/dockerfiles/Dockerfile"
+            }
+        }
+
+        stage('Build dashboard') {
+            agent {
+                docker {
+                    image 'quay.io/containers/podman:v3.4.4'
+                    args '--privileged -u root --entrypoint=\'\''
+                }
+            }
+            environment {
+                ICR_CREDS = credentials('icr-token')
+            }
+            steps {
+                sh label: 'Build registry', script: """cd che-dashboard
+                    echo $ICR_CREDS_PSW | podman login -u=$ICR_CREDS_USR --password-stdin us.icr.io
+                    podman build . -f build/dockerfiles/Dockerfile -t us.icr.io/apihub-cr/che-dashboard:${env.CHE_VERSION}
+                    podman push us.icr.io/apihub-cr/che-dashboard:$CHE_VERSION
+                    cd ..
+                    rm -rf che-dashboarda"""
+            }
+        }
+    }
+
+    post { 
+        always {
+            cleanWs()
+        }
     }
 }
