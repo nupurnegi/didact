@@ -1,6 +1,6 @@
 FROM node:20-alpine3.17 
 RUN apk add curl
-RUN curl -X GET -k -i 'https://${Git_CRED}:x-oauth-basic@api.github.com/repos/eclipse-theia/theia/git/refs/heads/master'
 ADD https://${Git_CRED}:x-oauth-basic@api.github.com/repos/eclipse-theia/theia/git/refs /tmp/branch_info.json
+RUN curl -X GET -k -i 'https://${Git_CRED}:x-oauth-basic@api.github.com/repos/eclipse-theia/theia/git/refs/heads/master'
 
 
